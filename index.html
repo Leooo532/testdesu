@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Webhook メッセージ送信</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input, textarea, button {
+            width: 100%;
+            margin-bottom: 16px;
+            padding: 8px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #5865F2;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #404EED;
+        }
+        .toggle-button {
+            background-color: #CCCCCC;
+            color: #000;
+            text-align: center;
+            padding: 8px;
+            margin-bottom: 16px;
+            cursor: pointer;
+        }
+        .toggle-button.active {
+            background-color: #5865F2;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Discord Webhook メッセージ送信</h1>
+    <form id="webhookForm">
+        <label for="webhookUrl">Discord Webhook URL</label>
+        <input type="url" id="webhookUrl" placeholder="Discord Webhook URLを入力してください" required>
+        
+        <label for="message">送信するメッセージ</label>
+        <textarea id="message" rows="4" placeholder="メッセージを入力してください"></textarea>
+
+        <label for="imageUrl">画像URL (オプション)</label>
+        <input type="url" id="imageUrl" placeholder="画像URLを入力してください">
+
+        <div id="toggleButton" class="toggle-button">通常メッセージで送信</div>
+
+        <div id="colorPickerContainer" style="display: none;">
+            <label for="embedColor">埋め込みメッセージの色を選択</label>
+            <input type="color" id="embedColor" value="#5865F2">
+        </div>
+
+        <button type="submit">送信</button>
+    </form>
+    
+    <script>
+        const toggleButton = document.getElementById("toggleButton");
+        const colorPickerContainer = document.getElementById("colorPickerContainer");
+        let useEmbed = false; // デフォルトは通常メッセージ
+
+        toggleButton.addEventListener("click", () => {
+            useEmbed = !useEmbed; // トグル切り替え
+            toggleButton.textContent = useEmbed 
+                ? "埋め込みメッセージで送信" 
+                : "通常メッセージで送信";
+            toggleButton.classList.toggle("active", useEmbed);
+
+            // カラーピッカーを表示/非表示
+            colorPickerContainer.style.display = useEmbed ? "block" : "none";
+        });
+
+        document.getElementById("webhookForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const webhookUrl = document.getElementById("webhookUrl").value;
+            const message = document.getElementById("message").value;
+            const imageUrl = document.getElementById("imageUrl").value;
+            const embedColor = document.getElementById("embedColor").value; // カラーピッカーの値
+
+            if (!webhookUrl) {
+                alert("Webhook URLを入力してください。");
+                return;
+            }
+
+            // 埋め込みメッセージ用データ
+            const embedData = {
+                embeds: [
+                    {
+                        title: "",
+                        description: message || null,
+                        color: parseInt(embedColor.replace("#", ""), 16), // HEXを整数に変換
+                        image: imageUrl ? { url: imageUrl } : null // 画像URLを埋め込みの画像として設定
+                    }
+                ]
+            };
+
+            // 通常メッセージ用データ
+            const normalData = { 
+                content: message, 
+                embeds: imageUrl ? [{ image: { url: imageUrl } }] : null // 画像を埋め込み形式で追加
+            };
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(useEmbed ? embedData : normalData)
+                });
+
+                if (response.ok) {
+                    alert("メッセージが送信されました！");
+                } else {
+                    alert("送信に失敗しました。URLを確認してください。");
+                }
+            } catch (error) {
+                alert("エラーが発生しました: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
